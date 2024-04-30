@@ -1,5 +1,7 @@
 require("dotenv").config();
+
 const { PrismaClient } = require("@prisma/client");
+
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
@@ -19,6 +21,9 @@ app.use(
   })
 );
 app.use(cookieParser());
+
+
+
 
 app.get('/',(req,res)=> {
 res.json('success')
@@ -144,6 +149,8 @@ async function authenticateUser(req) {
   new Error('no valid token')
  }
 }
+
+// search user from backend
 
 
 app.get('/messages/:id', async (req,res) => {
