@@ -1,8 +1,9 @@
 require("dotenv").config();
-
-const { PrismaClient } = require("@prisma/client");
-
 const express = require("express");
+const { PrismaClient } = require("@prisma/client");
+// const passport = require('passport');
+// const session = require('express-session')
+// const GoogleStrategy = require('passport-google-oauth20').Strategy
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const bcryptSalt = bcrypt.genSaltSync(10);
@@ -22,7 +23,14 @@ app.use(
 );
 app.use(cookieParser());
 
+// app.use(session({
+//   secret : 'thisissecret',
+//   resave : false,
+//   saveUninitialized : true
+// }))
 
+// app.use(passport.initialize())
+// app.use(session())
 
 
 app.get('/',(req,res)=> {
@@ -42,6 +50,24 @@ app.get('/user', async (req,res)=> {
     }
 })
 
+// app.get('/auth/google',passport.authenticate('google', {
+//   scope : ['profile', 'email']
+// }))
+// // google auth strategy 
+// app.get('/auth/google/callback', 
+//   passport.authenticate('google', { failureRedirect: '/login' }),
+//   function(req, res) {
+//     // Successful authentication, redirect home.
+//     res.redirect('/');
+//   });
+
+// passport.use('google', new GoogleStrategy({
+//   clientId : process.env.GOOGLE_ID ,
+//   clientSecret : process.env.GOOGLE_SECRET ,
+//   callbackURL : 'http://localhost:3000/auth/google/callback'
+// }), function (accessToken, refreshToken, profile, cb) {
+//   console.log(profile)
+// })
 
 
 app.post("/register", async (req, res) => {
@@ -82,6 +108,9 @@ app.post("/register", async (req, res) => {
     console.log(error);
   }
 });
+
+
+
 app.post("/login", async (req, res) => {
   const {email, password } = req.body;
 
