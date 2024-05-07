@@ -22,8 +22,18 @@ model User {
   createdAt DateTime @default(now())
   send   Message[] @relation(name: "send")
   received   Message[] @relation(name: "received")
+  friends Friend[] 
 
 
+}
+
+model Friend {
+  id String @id @default(cuid()) @map("_id")
+  createdAt DateTime @default(now())
+  friendName String
+  userid String 
+  friendId String @unique
+  user User @relation(fields: [userid],references: [id]) 
 }
 
 model Message {
