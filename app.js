@@ -5,6 +5,7 @@ const { PrismaClient } = require("@prisma/client");
 // const session = require('express-session')
 // const GoogleStrategy = require('passport-google-oauth20').Strategy
 const cors = require("cors");
+const http = require('http')
 const bcrypt = require("bcryptjs");
 const bcryptSalt = bcrypt.genSaltSync(10);
 const jwt = require("jsonwebtoken");
@@ -13,6 +14,7 @@ const ws = require("ws");
 const secret = process.env.JWT_SECRET;
 const prisma = new PrismaClient();
 const app = express();
+const server = http.createServer(app)
 const PORT = process.env.PORT || 5000;
 app.use(express.json());
 let idOfUser;
@@ -309,7 +311,7 @@ app.get("/logout", (req, res) => {
 //   res.send(data)
 // })
 
-const server = app.listen(PORT, (req, res) => {
+ server.listen(PORT, (req, res) => {
   console.log("server is running on port 5000");
 });
 
@@ -495,3 +497,8 @@ wss.on("connection", function connection(ws, req) {
 
   onlinePeople();
 });
+
+
+
+
+// module.exports = {server,prisma}
