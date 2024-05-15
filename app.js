@@ -172,8 +172,8 @@ app.post("/add", async (req, res) => {
 
 app.post("/friends", async (req, res) => {
   const userid = req.body.userid;
-    console.log(userid)
-  console.log("this is user id", req.body);
+  //   console.log(userid)
+  // console.log("this is user id", req.body);
   try {
     const data = await prisma.user.findUnique({
       where: {
@@ -186,8 +186,15 @@ app.post("/friends", async (req, res) => {
     if (data) {
       console.log("data found");
       const { friends } = data;
+    let filterdata = friends.map((val)=> {
+      return {
+        userid : val.friendId,
+        username : val.friendName
 
-      res.status(200).send(friends);
+      }
+    })
+
+      res.status(200).send(filterdata);
     } else {
       console.log("no data found");
     }
@@ -316,17 +323,16 @@ app.get("/logout", (req, res) => {
 });
 
 const wss = new ws.WebSocketServer({ server });
-function onlinePeople() {
-  [...wss.clients].forEach((client) => {
-    client.send(
-      JSON.stringify({
-        online: [...wss.clients].map((c) => ({
-          userid: c.userid,
-          username: c.username,
-        })),
-      })
-    );
-  });
+  function onlinePeople() {
+ [...wss.clients].forEach(client => {
+  client.send(JSON.stringify({
+    online : [...wss.clients].map((val)=> ({
+      userid : val.userid,
+      username : val.username
+    }))
+  }))
+ })
+
 }
 function sendMessageToUser(des, recId, msgId, uid) {
   [...wss.clients]
@@ -394,13 +400,25 @@ wss.on("connection", function connection(ws, req) {
     } catch (err) {
       console.log("Invalid json");
     }
-    console.log(rtcData);
+    
     const { type, des, receiverId, userTo, offer, answer, candidate } = rtcData;
 
     switch (type) {
+      case "close" : {
+        [...wss.clients]
+        .filter((c) => c.userid == userTo)
+        .forEach((e) =>
+          e.send(
+            JSON.stringify({
+              type: "close",
+              id: ws.userid,
+            })
+          )
+        );
+      } break;
       case "offer":
         {
-          console.log("here is offer");
+          // console.log("here is offer",offer);
           [...wss.clients]
             .filter((c) => c.userid == userTo)
             .forEach((e) =>
@@ -416,7 +434,7 @@ wss.on("connection", function connection(ws, req) {
         break;
       case "answer":
         {
-          console.log("here is answer", answer);
+          // console.log("here is answer", answer);
           [...wss.clients]
             .filter((c) => c.userid == userTo)
             .forEach((e) =>
@@ -495,7 +513,7 @@ wss.on("connection", function connection(ws, req) {
     console.log("disconnected", data);
   });
 
-  onlinePeople();
+ 
 });
 
 
