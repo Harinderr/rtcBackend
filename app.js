@@ -172,6 +172,7 @@ app.post("/add", async (req, res) => {
 
 app.post("/friends", async (req, res) => {
   const userid = req.body.userid;
+  
   //   console.log(userid)
   // console.log("this is user id", req.body);
   try {
@@ -186,15 +187,41 @@ app.post("/friends", async (req, res) => {
     if (data) {
       console.log("data found");
       const { friends } = data;
-    let filterdata = friends.map((val)=> {
-      return {
-        userid : val.friendId,
-        username : val.friendName
+   
+    const  lmd = await Promise.all(friends.map(async (val)=> {
+        const latestMessage = await prisma.message.findFirst({
+          where: {
+            OR: [
+              {
+                senderId: userid, // Messages sent by the current user
+                receiverId: val.friendId, // Messages received by the current user
+              },
+              {
+                senderId: val.friendId, // Messages sent by the other user
+                receiverId: userid, // Messages received by the other user
+              },
+            ],
+          },
+          orderBy: {
+            createdAt: "desc", // Optional: Order messages by creation date
+          },
+        });
 
-      }
-    })
+        return {
+          userid : val.friendId,
+          username : val.friendName,
+          latestMsg : latestMessage ? latestMessage.des : ''
+        }
 
-      res.status(200).send(filterdata);
+
+
+
+    }))
+   
+  
+    
+
+      res.status(200).send(lmd);
     } else {
       console.log("no data found");
     }
@@ -520,3 +547,32 @@ wss.on("connection", function connection(ws, req) {
 
 
 // module.exports = {server,prisma}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
