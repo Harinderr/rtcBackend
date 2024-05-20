@@ -443,6 +443,18 @@ wss.on("connection", function connection(ws, req) {
           )
         );
       } break;
+      case "callRejected" : {
+        [...wss.clients]
+        .filter((c) => c.userid == userTo)
+        .forEach((e) =>
+          e.send(
+            JSON.stringify({
+              type: "close",
+              id: ws.userid,
+            })
+          )
+        );
+      } break;
       case "offer":
         {
           // console.log("here is offer",offer);
