@@ -1,9 +1,9 @@
 require("dotenv").config();
 const express = require("express");
-const { PrismaClient } = require("@prisma/client");
-// const passport = require('passport');
-// const session = require('express-session')
-// const GoogleStrategy = require('passport-google-oauth20').Strategy
+const{ PrismaClient } = require('@prisma/client')
+const passport = require('passport');
+const session = require('express-session')
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const cors = require("cors");
 const http = require('http')
 const bcrypt = require("bcryptjs");
@@ -13,8 +13,15 @@ const cookieParser = require("cookie-parser");
 const ws = require("ws");
 const secret = process.env.JWT_SECRET;
 const prisma = new PrismaClient();
+
+
+
 const app = express();
 const server = http.createServer(app)
+
+
+
+
 const PORT = process.env.PORT || 5000;
 app.use(express.json());
 let idOfUser;
@@ -27,14 +34,24 @@ app.use(
 );
 app.use(cookieParser());
 
-// app.use(session({
-//   secret : 'thisissecret',
-//   resave : false,
-//   saveUninitialized : true
-// }))
+app.use(session({
+  secret : 'thisissecret',
+  resave : false,
+  saveUninitialized : true
+}))
 
-// app.use(passport.initialize())
-// app.use(session())
+
+
+
+
+
+
+app.get('/api/logout', (req, res) => {
+  req.logout(() => {
+    res.redirect('/');
+  });
+});
+
 
 app.get("/", (req, res) => {
   res.json("success");
@@ -53,31 +70,22 @@ app.get("/user", async (req, res) => {
   }
 });
 
-// app.get('/auth/google',passport.authenticate('google', {
-//   scope : ['profile', 'email']
-// }))
-// // google auth strategy
-// app.get('/auth/google/callback',
-//   passport.authenticate('google', { failureRedirect: '/login' }),
-//   function(req, res) {
-//     // Successful authentication, redirect home.
-//     res.redirect('/');
-//   });
-
-// passport.use('google', new GoogleStrategy({
-//   clientId : process.env.GOOGLE_ID ,
-//   clientSecret : process.env.GOOGLE_SECRET ,
-//   callbackURL : 'http://localhost:3000/auth/google/callback'
-// }), function (accessToken, refreshToken, profile, cb) {
-//   console.log(profile)
-// })
 
 app.post("/register", async (req, res) => {
   const { username, email, password } = req.body;
   console.log(req.body);
   const hashpass = bcrypt.hashSync(password, bcryptSalt);
+
   try {
     if (req.body) {
+      const checkUser = await prisma.user.findUnique({
+        where : {
+          email : email
+        }
+      })
+      if(checkUser) {
+         return  res.status(409).json({result : 'email already exists'})
+        }  
       const user = await prisma.user.create({
         data: {
           name: username,
@@ -103,12 +111,23 @@ app.post("/register", async (req, res) => {
         );
       }
     } else {
-      console.log("there is an error");
+      
+      res.status(401).json({result : 'Cant register'})
+
     }
   } catch (error) {
     console.log(error);
+    res.status(401).json({result :'Internal server'})
   }
 });
+
+app.get("/addpeople", async (req,res)=> {
+  const data = await prisma.user.findMany({
+    take: 6
+  })
+  console.log(data)
+ return res.status(200).json({result : data})
+})
 
 app.post("/addpeople", async (req, res) => {
   const search = req.body.data;
@@ -164,7 +183,7 @@ app.post("/add", async (req, res) => {
         friendName: uname,
       },
     });
-    res.status(200).send("data got");
+    res.status(200).send({result : "user Added as friend"});
   } catch (err) {
     console.log("there is error", err);
   }
@@ -173,8 +192,8 @@ app.post("/add", async (req, res) => {
 app.post("/friends", async (req, res) => {
   const userid = req.body.userid;
   
-  //   console.log(userid)
-  // console.log("this is user id", req.body);
+    console.log(userid)
+  console.log("this is user id", req.body);
   try {
     const data = await prisma.user.findUnique({
       where: {
@@ -242,7 +261,7 @@ app.post("/login", async (req, res) => {
       });
 
       if (!user) {
-        return res.sendStatus(401);
+        return res.status(401).json({result : 'user doesnt exixt'});
       }
       const passMatch = await bcrypt.compare(password, user.password);
 
@@ -256,7 +275,7 @@ app.post("/login", async (req, res) => {
           {},
           (err, token) => {
             if (err) {
-              throw new Error("thre is annn error");
+              throw new Error(err);
             } else {
               return res
                 .cookie("token", token, { sameSite: "none", secure: true })
@@ -266,13 +285,14 @@ app.post("/login", async (req, res) => {
           }
         );
       } else {
-        console.log("user passwod  invalid");
+      return  res.status(401).json({result : "password not matched"})
       }
     } else {
-      console.log("there is an error loggin in ");
+    return res.status(400).json({result : "Bad request"})
     }
   } catch (error) {
     console.log(error);
+    return res.status(500).json({ result: 'Internal Server Error' });
   }
 });
 
@@ -399,11 +419,20 @@ wss.on("connection", function connection(ws, req) {
   });
 
   const cookies = req.headers.cookie;
-  if (cookies) {
-    let token = cookies.split("=")[1];
+if (cookies) {
+  let token = null;
+    let cookiesArray = cookies.split(';')
+    cookiesArray.forEach(cookie => {
+      const [key,value] = cookie.trim().split('=')
+      if(key == 'token') {
+        token = value
+      }
+    })
+
+    
     if (token) {
       jwt.verify(token, secret, {}, (err, user) => {
-        if (err) throw err;
+        if (err) throw Error(err);
         const { userid, username } = user;
         (ws.userid = userid), (ws.username = username);
       });
